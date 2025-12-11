@@ -2,6 +2,7 @@ export const SERVICE_UUID = "ec2f3aa0-4ed8-71bd-f147-b2bc37195232";
 
 export const CHR_WIFI_UUID = "a5313036-a66e-e990-2147-49a7b1557044";
 export const CHR_WIFI_STATUS_UUID = "32f4b3c3-d9b2-4d26-8da6-c9e88711b65d";
+export const CHR_FW_VERSION_UUID = "d568bf56-7527-4fe0-9cc5-7c6968613592"; // v1.1.0
 
 export const CHR_OTA_SIZE_UUID = "c839db31-c8e7-4c59-938d-c4b46e7bc2a4";
 export const CHR_OTA_DATA_UUID = "ed900bcc-2ed5-40b0-b33a-fe7483f254c7";
@@ -48,5 +49,3 @@ export const parseWifiStatus = (value: DataView): WifiStatus => {
 		isConnected: (status & WIFI_IS_CONNECTED_VAL_BIT) !== 0,
 	};
 };
-
-

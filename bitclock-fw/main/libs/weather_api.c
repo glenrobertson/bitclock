@@ -10,14 +10,6 @@
 
 static const char *TAG = "weather_api";
 
-typedef enum {
-  WEATHER_PARSER_STATUS_LOOKING_FOR_WEATHER_1 = 0,
-  WEATHER_PARSER_STATUS_LOOKING_FOR_WEATHER_2,
-  WEATHER_PARSER_STATUS_DONE,
-} weather_parser_status_t;
-weather_parser_status_t parser_status = 0;
-int parser_token_index = 0;
-
 /*
   WEATHER_ICON_NONE
   WEATHER_ICON_CLEAR_NIGHT
@@ -37,28 +29,8 @@ typedef struct {
 } weather_icon_mapping_t;
 
 // Icons: https://github.com/weather-gov/weather.gov/blob/main/docs/icons.md
+// We use fuzzy matching so list should have more specific entries first
 static weather_icon_mapping_t icon_mapping[] = {
-    {.label = "skc",
-     .icon_day = WEATHER_ICON_SUNNY,
-     .icon_night = WEATHER_ICON_CLEAR_NIGHT},
-    {.label = "few",
-     .icon_day = WEATHER_ICON_SUNNY,
-     .icon_night = WEATHER_ICON_CLEAR_NIGHT},
-    {.label = "skc",
-     .icon_day = WEATHER_ICON_SUNNY,
-     .icon_night = WEATHER_ICON_CLEAR_NIGHT},
-    {.label = "few",
-     .icon_day = WEATHER_ICON_PARTLY_CLOUDY_DAY,
-     .icon_night = WEATHER_ICON_PARTLY_CLOUDY_NIGHT},
-    {.label = "sct",
-     .icon_day = WEATHER_ICON_PARTLY_CLOUDY_DAY,
-     .icon_night = WEATHER_ICON_PARTLY_CLOUDY_NIGHT},
-    {.label = "bkn",
-     .icon_day = WEATHER_ICON_CLOUD,
-     .icon_night = WEATHER_ICON_CLOUD},
-    {.label = "ovc",
-     .icon_day = WEATHER_ICON_CLOUD,
-     .icon_night = WEATHER_ICON_CLOUD},
     {.label = "wind_skc",
      .icon_day = WEATHER_ICON_SUNNY,
      .icon_night = WEATHER_ICON_CLEAR_NIGHT},
@@ -74,9 +46,18 @@ static weather_icon_mapping_t icon_mapping[] = {
     {.label = "wind_ovc",
      .icon_day = WEATHER_ICON_CLOUD,
      .icon_night = WEATHER_ICON_CLOUD},
-    {.label = "snow",
+    {.label = "rain_fzra",
      .icon_day = WEATHER_ICON_SNOWY,
      .icon_night = WEATHER_ICON_SNOWY},
+    {.label = "snow_fzra",
+     .icon_day = WEATHER_ICON_SNOWY,
+     .icon_night = WEATHER_ICON_SNOWY},
+    {.label = "rain_showers_hi",
+     .icon_day = WEATHER_ICON_RAINY,
+     .icon_night = WEATHER_ICON_RAINY},
+    {.label = "rain_showers",
+     .icon_day = WEATHER_ICON_RAINY,
+     .icon_night = WEATHER_ICON_RAINY},
     {.label = "rain_snow",
      .icon_day = WEATHER_ICON_SNOWY,
      .icon_night = WEATHER_ICON_SNOWY},
@@ -86,13 +67,31 @@ static weather_icon_mapping_t icon_mapping[] = {
     {.label = "snow_sleet",
      .icon_day = WEATHER_ICON_SNOWY,
      .icon_night = WEATHER_ICON_SNOWY},
+    {.label = "tsra_sct",
+     .icon_day = WEATHER_ICON_THUNDERSTORM,
+     .icon_night = WEATHER_ICON_THUNDERSTORM},
+    {.label = "tsra_hi",
+     .icon_day = WEATHER_ICON_THUNDERSTORM,
+     .icon_night = WEATHER_ICON_THUNDERSTORM},
+    {.label = "skc",
+     .icon_day = WEATHER_ICON_SUNNY,
+     .icon_night = WEATHER_ICON_CLEAR_NIGHT},
+    {.label = "few",
+     .icon_day = WEATHER_ICON_SUNNY,
+     .icon_night = WEATHER_ICON_CLEAR_NIGHT},
+    {.label = "sct",
+     .icon_day = WEATHER_ICON_PARTLY_CLOUDY_DAY,
+     .icon_night = WEATHER_ICON_PARTLY_CLOUDY_NIGHT},
+    {.label = "bkn",
+     .icon_day = WEATHER_ICON_CLOUD,
+     .icon_night = WEATHER_ICON_CLOUD},
+    {.label = "ovc",
+     .icon_day = WEATHER_ICON_CLOUD,
+     .icon_night = WEATHER_ICON_CLOUD},
+    {.label = "snow",
+     .icon_day = WEATHER_ICON_SNOWY,
+     .icon_night = WEATHER_ICON_SNOWY},
     {.label = "fzra",
-     .icon_day = WEATHER_ICON_SNOWY,
-     .icon_night = WEATHER_ICON_SNOWY},
-    {.label = "rain_fzra",
-     .icon_day = WEATHER_ICON_SNOWY,
-     .icon_night = WEATHER_ICON_SNOWY},
-    {.label = "snow_fzra",
      .icon_day = WEATHER_ICON_SNOWY,
      .icon_night = WEATHER_ICON_SNOWY},
     {.label = "sleet",
@@ -101,19 +100,7 @@ static weather_icon_mapping_t icon_mapping[] = {
     {.label = "rain",
      .icon_day = WEATHER_ICON_RAINY,
      .icon_night = WEATHER_ICON_RAINY},
-    {.label = "rain_showers",
-     .icon_day = WEATHER_ICON_RAINY,
-     .icon_night = WEATHER_ICON_RAINY},
-    {.label = "rain_showers_hi",
-     .icon_day = WEATHER_ICON_RAINY,
-     .icon_night = WEATHER_ICON_RAINY},
     {.label = "tsra",
-     .icon_day = WEATHER_ICON_THUNDERSTORM,
-     .icon_night = WEATHER_ICON_THUNDERSTORM},
-    {.label = "tsra_sct",
-     .icon_day = WEATHER_ICON_THUNDERSTORM,
-     .icon_night = WEATHER_ICON_THUNDERSTORM},
-    {.label = "tsra_hi",
      .icon_day = WEATHER_ICON_THUNDERSTORM,
      .icon_night = WEATHER_ICON_THUNDERSTORM},
     {.label = "tornado",
@@ -146,7 +133,7 @@ static weather_icon_mapping_t icon_mapping[] = {
     {.label = "fog",
      .icon_day = WEATHER_ICON_FOGGY,
      .icon_night = WEATHER_ICON_FOGGY},
-    {0}};
+    {.label = NULL}};
 /*
 {
   "number": 1,
@@ -196,7 +183,7 @@ weather_icon_t icon_for_image_url(const char *icon_url, bool day_icon) {
   filename++;
 
   weather_icon_mapping_t *cur_icon = icon_mapping;
-  for (; *((uint8_t *)cur_icon) != 0; cur_icon++) {
+  for (; cur_icon->label != NULL; cur_icon++) {
     if (strncmp(cur_icon->label, filename, strlen(cur_icon->label)) == 0) {
       return day_icon ? cur_icon->icon_day : cur_icon->icon_night;
     }
@@ -244,8 +231,14 @@ static esp_err_t weather_http_event_handler(esp_http_client_event_t *evt) {
   return ESP_OK;
 }
 
-esp_err_t parse_weather_response(char *response_buffer,
-                                 wifi_weather_t *weather) {
+esp_err_t parse_weather_response(char *response_buffer, wifi_weather_t *weather,
+                                 struct tm *timeinfo) {
+  char current_date_str[11];
+  strftime(current_date_str, sizeof(current_date_str), "%Y-%m-%d", timeinfo);
+  cJSON *startTime;
+  cJSON *endTime;
+  cJSON *isDaytime;
+
   cJSON *root = cJSON_Parse(response_buffer);
   if (root == NULL) {
     ESP_LOGE(TAG, "Error on JSON parse");
@@ -267,18 +260,53 @@ esp_err_t parse_weather_response(char *response_buffer,
     return ESP_FAIL;
   }
 
+  // Find first period matching today.
+  //
+  // api.weather.gov caches old forecasts up to 12+ hours which may include
+  // the previous day's forecast
+  cJSON *period = NULL;
+  int start_period_i = 0;
+  int num_periods = cJSON_GetArraySize(periods);
+  for (; start_period_i < num_periods; start_period_i++) {
+    cJSON *cur_period = cJSON_GetArrayItem(periods, start_period_i);
+    if (cur_period == NULL) {
+      ESP_LOGE(TAG, "No period found at index %d", start_period_i);
+      break;
+    }
+
+    startTime = cJSON_GetObjectItem(cur_period, "startTime");
+    if (startTime == NULL || startTime->valuestring == NULL) {
+      ESP_LOGE(TAG, "No startTime found in response");
+      continue;
+    }
+
+    // Skip any forecasts that are just this morning (end time is today and not
+    // isDaytime)
+    endTime = cJSON_GetObjectItem(cur_period, "endTime");
+    isDaytime = cJSON_GetObjectItem(cur_period, "isDaytime");
+    if (endTime != NULL && isDaytime != NULL && isDaytime->valueint == 0 &&
+        strncmp(endTime->valuestring, current_date_str, 10) == 0) {
+      continue;
+    }
+
+    // Otherwise, stop if the forecast is today
+    if (strncmp(startTime->valuestring, current_date_str, 10) == 0) {
+      period = cur_period;
+      break;
+    }
+  }
+
+  if (period == NULL) {
+    ESP_LOGE(TAG, "No period found for today in response");
+    cJSON_Delete(root);
+    return ESP_FAIL;
+  }
+
   // If we only have one temperature, that's ok
   // If isDayTime is false, that's the last temperature to parse. Store it as
   // the min If isDaytime is true for the first value, store that as max and
   // store next (if available) as min Parse icon string and store appropriate
   // local image enum value
-
-  cJSON *period = cJSON_GetArrayItem(periods, 0);
-  if (period == NULL) {
-    ESP_LOGE(TAG, "No period found in response");
-    cJSON_Delete(root);
-    return ESP_FAIL;
-  }
 
   cJSON *temperature = cJSON_GetObjectItem(period, "temperature");
   if (temperature == NULL) {
@@ -287,7 +315,7 @@ esp_err_t parse_weather_response(char *response_buffer,
     return ESP_FAIL;
   }
 
-  cJSON *isDaytime = cJSON_GetObjectItem(period, "isDaytime");
+  isDaytime = cJSON_GetObjectItem(period, "isDaytime");
   if (isDaytime == NULL) {
     ESP_LOGE(TAG, "No isDaytime found in response");
     cJSON_Delete(root);
@@ -295,7 +323,7 @@ esp_err_t parse_weather_response(char *response_buffer,
   }
 
   cJSON *icon = cJSON_GetObjectItem(period, "icon");
-  if (icon == NULL) {
+  if (icon == NULL || icon->valuestring == NULL) {
     ESP_LOGE(TAG, "No icon found in response");
     cJSON_Delete(root);
     return ESP_FAIL;
@@ -310,14 +338,14 @@ esp_err_t parse_weather_response(char *response_buffer,
     weather->temp_min = temperature->valueint;
   }
 
-  // Get second temperature if available if the first was daytime, but don't
-  // error if missing
-  if (isDaytime->valueint) {
-    cJSON *period2 = cJSON_GetArrayItem(periods, 1);
+  // Get second temperature if available (the period immediately after the
+  // first one found). Don't error if missing.
+  if (isDaytime->valueint && (start_period_i + 1) < num_periods) {
+    cJSON *period2 = cJSON_GetArrayItem(periods, start_period_i + 1);
     if (period2 != NULL) {
       cJSON *temperature2 = cJSON_GetObjectItem(period2, "temperature");
       if (temperature2 != NULL) {
-        weather->temp_min = temperature2->valuedouble;
+        weather->temp_min = temperature2->valueint;
       }
     }
   }
@@ -331,9 +359,11 @@ esp_err_t parse_weather_response(char *response_buffer,
   return ESP_OK;
 }
 
-esp_err_t refresh_daily_weather(wifi_weather_t *weather, const char *path) {
+esp_err_t refresh_daily_weather(wifi_weather_t *weather, const char *path,
+                                struct tm *timeinfo) {
   // TODO: Add ?units=si for SI units?
   // https://www.weather.gov/documentation/services-web-api#/default/gridpoint_forecast
+  esp_err_t err = ESP_OK;
   esp_http_client_config_t config = {
       .host = "api.weather.gov",
       .transport_type = HTTP_TRANSPORT_OVER_SSL,
@@ -344,19 +374,38 @@ esp_err_t refresh_daily_weather(wifi_weather_t *weather, const char *path) {
       .timeout_ms = 10000,
   };
   esp_http_client_handle_t client = esp_http_client_init(&config);
+  if (client == NULL) {
+    ESP_LOGE(TAG, "Failed to initialize HTTP client");
+    return ESP_ERR_NO_MEM;
+  }
 
-  esp_err_t err = esp_http_client_perform(client);
+  esp_http_client_set_header(client, "User-agent",
+                             "(bitclock.io, weather@bitclock.io)");
+  esp_http_client_set_header(client, "Accept", "application/geo+json");
+
+  err = esp_http_client_perform(client);
   if (err != ESP_OK) {
     ESP_LOGE(TAG, "HTTP GET request failed: %s", esp_err_to_name(err));
-    esp_http_client_cleanup(client);
-    return err;
+    goto http_cleanup;
   }
-  ESP_LOGI(TAG, "HTTP GET Status = %d, content_length = %" PRId64,
-           esp_http_client_get_status_code(client),
+
+  int status_code = esp_http_client_get_status_code(client);
+  ESP_LOGI(TAG, "HTTP GET Status = %d, content_length = %" PRId64, status_code,
            esp_http_client_get_content_length(client));
 
-  parse_weather_response(http_response_buffer, weather);
+  if (status_code < 200 || status_code >= 300) {
+    ESP_LOGE(TAG, "HTTP request failed with status %d", status_code);
+    err = ESP_ERR_INVALID_RESPONSE;
+    goto http_cleanup;
+  }
 
+  err = parse_weather_response(http_response_buffer, weather, timeinfo);
+  if (err != ESP_OK) {
+    ESP_LOGE(TAG, "Failed to parse weather response: %s", esp_err_to_name(err));
+    goto http_cleanup;
+  }
+
+http_cleanup:
   esp_http_client_cleanup(client);
-  return ESP_OK;
+  return err;
 }
