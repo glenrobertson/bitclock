@@ -22,10 +22,15 @@ EventGroupHandle_t mqtt_event_group_handle;
 static StaticEventGroup_t mqtt_event_group;
 
 void get_aqi_data(aqi_data_t *aqi_data) {
+  aqi_data->temp_available = sht4x_current_temp_available();
   aqi_data->temp_celsius = sht4x_current_temp_celsius();
+  aqi_data->humidity_available = sht4x_current_temp_available();
   aqi_data->humidity = sht4x_current_relative_humidity();
+  aqi_data->co2_available = scd4x_current_ppm_available();
   aqi_data->co2_ppm = scd4x_current_co2_ppm();
+  aqi_data->nox_available = sgp41_current_nox_available();
   aqi_data->nox_index = sgp41_current_nox_index();
+  aqi_data->voc_available = sgp4x_current_voc_available();
   aqi_data->voc_index = sgp4x_current_voc_index();
 }
 

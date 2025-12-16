@@ -101,20 +101,26 @@ void send_homeassistant_mqtt_sensor_data(const char *mqtt_url,
   char buffer[16];
   bool success = true;
 
-  snprintf(buffer, sizeof(buffer), "%u", aqi_data->co2_ppm);
-  success = success && publish_homeassistant_sensor(co2_unique_id, buffer);
-
-  snprintf(buffer, sizeof(buffer), "%ld", aqi_data->nox_index);
-  success = success && publish_homeassistant_sensor(nox_unique_id, buffer);
-
-  snprintf(buffer, sizeof(buffer), "%ld", aqi_data->voc_index);
-  success = success && publish_homeassistant_sensor(voc_unique_id, buffer);
-
-  snprintf(buffer, sizeof(buffer), "%.2f", aqi_data->temp_celsius);
-  success = success && publish_homeassistant_sensor(temp_unique_id, buffer);
-
-  snprintf(buffer, sizeof(buffer), "%.2f", aqi_data->humidity);
-  success = success && publish_homeassistant_sensor(humidity_unique_id, buffer);
+  if (aqi_data->co2_available) {
+    snprintf(buffer, sizeof(buffer), "%u", aqi_data->co2_ppm);
+    success = success && publish_homeassistant_sensor(co2_unique_id, buffer);
+  }
+  if (aqi_data->nox_available) {
+    snprintf(buffer, sizeof(buffer), "%ld", aqi_data->nox_index);
+    success = success && publish_homeassistant_sensor(nox_unique_id, buffer);
+  }
+  if (aqi_data->voc_available) {
+    snprintf(buffer, sizeof(buffer), "%ld", aqi_data->voc_index);
+    success = success && publish_homeassistant_sensor(voc_unique_id, buffer);
+  }
+  if (aqi_data->temp_available) {
+    snprintf(buffer, sizeof(buffer), "%.2f", aqi_data->temp_celsius);
+    success = success && publish_homeassistant_sensor(temp_unique_id, buffer);
+  }
+  if (aqi_data->humidity_available) {
+    snprintf(buffer, sizeof(buffer), "%.2f", aqi_data->humidity);
+    success = success && publish_homeassistant_sensor(humidity_unique_id, buffer);
+  }
 
   if (success) {
     ESP_LOGI(TAG, "Homeassistant sensor data published");
