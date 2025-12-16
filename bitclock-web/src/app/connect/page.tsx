@@ -48,7 +48,7 @@ export default function Home() {
   const [wifiStatus, setWifiStatus] = useState<gatt.WifiStatus | null>(null);
   const [appSelection, setAppSelection] = useState(0);
 
-  let mqttCharacteristicSupported = false;
+  const [mqttCharacteristicSupported, setMqttCharacteristicSupported] = useState(false);
 
   const decoder = new TextDecoder();
 
@@ -161,15 +161,16 @@ export default function Home() {
         if (val != undefined) {
           parser.setter(parser.parse(val));
         }
+        if (parser.attributeId === gatt.CHR_MQTT_URL_UUID) {
+          console.log("MQTT URL characteristic supported");
+          setMqttCharacteristicSupported(true);
+        }
       } catch (err) {
         let attrIdStr =
           typeof parser.attributeId === "number"
             ? parser.attributeId.toString(16)
             : parser.attributeId;
         console.error(`Failed to read characteristic: ${attrIdStr}: ${err}`);
-        if (parser.attributeId === gatt.CHR_MQTT_URL_UUID) {
-          mqttCharacteristicSupported = false;
-        }
       }
     }
 
