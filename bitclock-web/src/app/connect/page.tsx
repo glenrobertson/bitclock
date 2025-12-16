@@ -48,6 +48,8 @@ export default function Home() {
   const [wifiStatus, setWifiStatus] = useState<gatt.WifiStatus | null>(null);
   const [appSelection, setAppSelection] = useState(0);
 
+  let mqttCharacteristicSupported = false;
+
   const decoder = new TextDecoder();
 
   const timezoneDecoder = (value: DataView): string | null => {
@@ -165,6 +167,9 @@ export default function Home() {
             ? parser.attributeId.toString(16)
             : parser.attributeId;
         console.error(`Failed to read characteristic: ${attrIdStr}: ${err}`);
+        if (parser.attributeId === gatt.CHR_MQTT_URL_UUID) {
+          mqttCharacteristicSupported = false;
+        }
       }
     }
 
@@ -290,8 +295,9 @@ export default function Home() {
 
           <Divider my="md" />
 
+          { mqttCharacteristicSupported ? (
           <MqttBlock bluetoothConnection={bluetoothConnection} mqttUrl={mqttUrl} setMqttUrl={setMqttUrl} />
-
+          ) : null }
           <Divider my="md" />
 
           <WifiBlock
