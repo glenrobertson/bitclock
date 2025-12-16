@@ -11,7 +11,7 @@
 
 #ifdef MQTT_TASK_ENABLED
 
-// #define TASK_DEBUGGING_ENABLED
+#define TASK_DEBUGGING_ENABLED
 
 static const char *TAG = "mqtt-task";
 
@@ -73,41 +73,43 @@ void mqtt_task_run(void *pvParameters) {
 
 #ifdef TASK_DEBUGGING_ENABLED
 void vPrintTaskWatermarks(void) {
-  TaskStatus_t *pxTaskStatusArray;
-  volatile UBaseType_t uxArraySize;
-  uint32_t ulTotalRunTime;
+  // Always print stack watermarks (doesn't require uxTaskGetSystemState)
+  UBaseType_t uxArraySize = uxTaskGetNumberOfTasks();
 
-  // Get number of tasks
-  uxArraySize = uxTaskGetNumberOfTasks();
+  // Allocate array to store task information (only used if trace facility is enabled)
+  TaskStatus_t *pxTaskStatusArray =
+      (TaskStatus_t *)pvPortMalloc(uxArraySize * sizeof(TaskStatus_t));
 
-  // Allocate array to store task information
-  pxTaskStatusArray = pvPortMalloc(uxArraySize * sizeof(TaskStatus_t));
+  if (pxTaskStatusArray == NULL) {
+    ESP_LOGW(TAG, "pvPortMalloc failed; can't print task watermarks");
+  } else {
 
-  if (pxTaskStatusArray != NULL) {
-    // Generate raw status information about each task
-    uxArraySize =
-        uxTaskGetSystemState(pxTaskStatusArray, uxArraySize, &ulTotalRunTime);
+#if (configUSE_TRACE_FACILITY == 1)
+    uint32_t ulTotalRunTime = 0;
 
-    // Print header
-    ESP_LOGI(TAG, "Task Name\t\tWatermark\n");
-    ESP_LOGI(TAG, "------------------------------------\n");
+    // Populate task status array
+    uxArraySize = uxTaskGetSystemState(pxTaskStatusArray, uxArraySize, &ulTotalRunTime);
 
-    // For each task, print its watermark
+    ESP_LOGI(TAG, "Task Name\t\tWatermark");
+    ESP_LOGI(TAG, "------------------------------------");
+
     for (UBaseType_t x = 0; x < uxArraySize; x++) {
-      // Get watermark for this task
-      UBaseType_t uxStackHighWaterMark =
-          uxTaskGetStackHighWaterMark(pxTaskStatusArray[x].xHandle);
-
-      ESP_LOGI(TAG, "%-20s\t%lu words\n", pxTaskStatusArray[x].pcTaskName,
-               (unsigned long)uxStackHighWaterMark);
+      UBaseType_t wm = uxTaskGetStackHighWaterMark(pxTaskStatusArray[x].xHandle);
+      ESP_LOGI(TAG, "%-20s\t%lu words", pxTaskStatusArray[x].pcTaskName,
+               (unsigned long)wm);
     }
+#else
+    // Trace facility disabled: we can't enumerate task handles via uxTaskGetSystemState
+    ESP_LOGW(TAG, "configUSE_TRACE_FACILITY=0; enable it to list all tasks. "
+                  "You can still log individual tasks if you keep their TaskHandle_t.");
+#endif
 
-    // Free the array
     vPortFree(pxTaskStatusArray);
   }
-  // Log min heap space left from heap_caps_get_minimum_free_size
+
+  // Min heap remaining
   size_t min_free_heap = heap_caps_get_minimum_free_size(MALLOC_CAP_8BIT);
-  ESP_LOGI(TAG, "Min free heap: %d", min_free_heap);
+  ESP_LOGI(TAG, "Min free heap: %u", (unsigned)min_free_heap);
 }
 #endif
 
