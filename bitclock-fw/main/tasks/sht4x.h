@@ -1,6 +1,6 @@
 #include "freertos/FreeRTOS.h"
 
-#define SHT4X_STACK_SIZE 1024 * 3
+#define SHT4X_STACK_SIZE 1024 * 4
 
 extern StaticTask_t sht4xTaskBuffer;
 extern StackType_t sht4xTaskStack[SHT4X_STACK_SIZE];

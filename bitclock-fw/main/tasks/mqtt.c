@@ -57,7 +57,7 @@ void mqtt_task_run(void *pvParameters) {
     }
 
     if (!bitclock_wifi_is_started()) {
-      ESP_LOGW(TAG, "WiFi not started");
+      ESP_LOGI(TAG, "WiFi not started");
       delay_time = portMAX_DELAY;
       continue;
     }
@@ -81,7 +81,7 @@ void vPrintTaskWatermarks(void) {
       (TaskStatus_t *)pvPortMalloc(uxArraySize * sizeof(TaskStatus_t));
 
   if (pxTaskStatusArray == NULL) {
-    ESP_LOGW(TAG, "pvPortMalloc failed; can't print task watermarks");
+    ESP_LOGI(TAG, "pvPortMalloc failed; can't print task watermarks");
   } else {
 
 #if (configUSE_TRACE_FACILITY == 1)
@@ -100,7 +100,7 @@ void vPrintTaskWatermarks(void) {
     }
 #else
     // Trace facility disabled: we can't enumerate task handles via uxTaskGetSystemState
-    ESP_LOGW(TAG, "configUSE_TRACE_FACILITY=0; enable it to list all tasks. "
+    ESP_LOGI(TAG, "configUSE_TRACE_FACILITY=0; enable it to list all tasks. "
                   "You can still log individual tasks if you keep their TaskHandle_t.");
 #endif
 

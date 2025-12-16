@@ -1,6 +1,6 @@
 #include "freertos/FreeRTOS.h"
 
-#define SGP4X_STACK_SIZE 1024 * 3
+#define SGP4X_STACK_SIZE 1024 * 4
 
 extern StaticTask_t sgp4xTaskBuffer;
 extern StackType_t sgp4xTaskStack[SGP4X_STACK_SIZE];
